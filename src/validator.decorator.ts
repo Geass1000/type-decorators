@@ -28,20 +28,33 @@ export function fnProperty (mkProperty : Metakey, fn : PropertyHandler) :	Proper
 	}
 }
 
-export function validator (target : any, propertyKey : string, descriptor : PropertyDescriptor) {
-	console.log('---- Method');
-	console.log(target);
-	console.log(propertyKey);
-	console.log(descriptor);
 
+export function validator (target : any, propertyKey : string, descriptor : PropertyDescriptor) {
 	const method = descriptor.value;
+	let keys : Array<Metakey> = Reflect.getMetadataKeys(target, propertyKey);
+
+	const rgxDesign : RegExp = /^design:.*$/;
+	keys = keys.filter((data : Metakey) => {
+		return !rgxDesign.test(data.toString());
+	});
+	console.log('keys:', keys);
+
 	descriptor.value = function () {
-		let keys : Array<string|symbol> = Reflect.getMetadataKeys(target, propertyKey);
-		console.log(keys);
-		keys = keys.filter((data : string|symbol) => {
-			return typeof data === 'symbol';
+		const allArgs : IArguments = arguments;
+
+		keys.map((data : Metakey) => {
+			const metadata : IMDProperty = <IMDProperty>Reflect.getOwnMetadata(data, target, propertyKey);
+			console.log('metadata:', metadata);
+
+			if (!metadata) {
+				return;
+			}
+			metadata.data.map((paramIndex : number) => {
+				console.log('Checking property with index:', paramIndex);
+				metadata.method(allArgs[paramIndex], paramIndex);
+			});
 		});
-		console.log(keys);
-		return method.apply(this, arguments);
+
+		return method.apply(this, allArgs);
 	}
 }
