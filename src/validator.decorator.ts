@@ -1,16 +1,24 @@
 import "reflect-metadata";
 
-const rgxDesign : RegExp = /^is.*$/;
+export type Metakey = string | symbol;
+export type PropertyHandler = (data : any, index ?: number) => any;
+export type PropertyDecorator = (target : Object, propertyKey : Metakey, parameterIndex : number) => void;
 
 interface IMDProperty {
-	method : (data : any) => any;
+	method : PropertyHandler;
 	data : Array<number>;
 }
 
-export function fnProperty (mkProperty : string | symbol, fn : (data : any) => void) :
- 	(target : Object, propertyKey : string | symbol, parameterIndex : number) => void {
-	return (target : Object, propertyKey : string | symbol, parameterIndex : number) : void => {
-		let mdProperty : IMDProperty = Reflect.getOwnMetadata(mkProperty, target, propertyKey);
+/**
+ * fnProperty - call for metadata registration
+ *
+ * @param  {string|symbol} mkProperty - property metakey
+ * @param  {function} fn - function for handling
+ * @return {function} - function decorator
+ */
+export function fnProperty (mkProperty : Metakey, fn : PropertyHandler) :	PropertyDecorator {
+	return (target : Object, propertyKey : Metakey, parameterIndex : number) : void => {
+		let mdProperty : IMDProperty = <IMDProperty>Reflect.getOwnMetadata(mkProperty, target, propertyKey);
 		mdProperty = Object.assign({
 			method : fn,
 			data : []
